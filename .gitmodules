@@ -1,0 +1,6 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/64X-Dev/FinancialApp-Backend.git
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/64X-Dev/FinancialApp-Frontend.git

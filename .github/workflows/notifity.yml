@@ -1,0 +1,81 @@
+name: Telegram Notify
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Send Telegram message (pretty)
+        env:
+          BOT_TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHATID }}
+        run: |
+          set -euo pipefail
+
+          # HTML escaping for Telegram parse_mode=HTML
+          escape_html() {
+            local s="$1"
+            s="${s//&/&amp;}"
+            s="${s//</&lt;}"
+            s="${s//>/&gt;}"
+            printf '%s' "$s"
+          }
+
+          EVENT="${{ github.event_name }}"
+          REPO="${{ github.repository }}"
+          ACTOR="${{ github.actor }}"
+          REF="${{ github.ref }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Decide diff range depending on event type
+          if [ "$EVENT" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            RAW_TITLE="${{ github.event.pull_request.title }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+            RAW_TITLE="${{ github.event.head_commit.message }}"
+          fi
+
+          # Changed files (limit to avoid Telegram 4096 char limit)
+          MAX_FILES=30
+          ALL_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)"
+          TOTAL_COUNT="$(printf "%s\n" "$ALL_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          FILE_LIST_RAW="$(printf "%s\n" "$ALL_FILES" | sed '/^$/d' | head -n "$MAX_FILES")"
+          FILE_LIST_ESCAPED="$(escape_html "$FILE_LIST_RAW")"
+
+          if [ "$TOTAL_COUNT" -gt "$MAX_FILES" ]; then
+            EXTRA=$((TOTAL_COUNT - MAX_FILES))
+            FILE_LIST_ESCAPED="${FILE_LIST_ESCAPED}\n...and ${EXTRA} more"
+          fi
+
+          # Quote blocks: commit message + file list
+          TITLE_ESCAPED="$(escape_html "$RAW_TITLE")"
+
+          TEXT="<b>🔰 Repo:</b> <i>${REPO}</i>
+          <b>👤 Actor:</b> <i>${ACTOR}</i>
+          <b>🧩 Event:</b> <i>${EVENT}</i>
+          <b>🔗 Ref:</b> <i>${REF}</i>
+          <b>✅ Run:</b> <a href=\"${RUN_URL}\">Open workflow run</a>
+
+          <b>📝 Message:</b><pre>${TITLE_ESCAPED}</pre>
+
+          <b>📦 Changed files (${TOTAL_COUNT}):</b>
+          <pre>${FILE_LIST_ESCAPED}</pre>"
+
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "parse_mode=HTML" \
+            -d "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"

@@ -1,0 +1,22 @@
+{
+  "name": "financial-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Financial app with frontend and backend submodules",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:test-backend\"",
+
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:test-backend": "npm --prefix test-backend run dev",
+
+    "build": "npm --prefix frontend run build && npm --prefix test-backend run build",
+
+    "start:test-backend": "npm --prefix test-backend start",
+
+    "install:all": "npm --prefix frontend install && npm --prefix test-backend install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
