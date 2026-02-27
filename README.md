@@ -4,6 +4,10 @@ A comprehensive desktop application for financial management and tracking, built
 
 ## 🚀 Live Preview
 
+## Backend API
+
+Base URL: `https://financialapp-backend-cbnv.onrender.com/api/v1`
+
 Check out the live preview: [https://64x-dev.github.io/view/](https://64x-dev.github.io/view/)
 
 ## 📚 Documentation
@@ -21,7 +25,14 @@ FinancialApp/
 │   │   ├── Cargo.toml      # Rust dependencies
 │   │   └── tauri.conf.json # Tauri configuration
 │   └── package.json        # Frontend dependencies
-├── backend/                # Future backend services (planned)
+├── backend/                # Backend services
+│   ├── src/                # Source code
+│   │   ├── controllers/    # Route handlers
+│   │   ├── models/         # Data models / schemas
+│   │   ├── routes/         # API route definitions
+│   │   └── app.js          # Entry point
+│   ├── package.json        # Backend dependencies
+│   └── .env.example        # Example environment variables
 └── LICENSE                 # Project license
 ```
 
